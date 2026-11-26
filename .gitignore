@@ -3,6 +3,7 @@ bin/
 obj/
 publish/
 publish_*/
+dist/
 TestResults/
 *.user
 *.suo
@@ -10,10 +11,11 @@ TestResults/
 *.pdb
 *.log
 
-# Visual Studio / Rider / VS Code
+# Visual Studio / Rider / VS Code / local agent plans
 .vs/
 .idea/
 .vscode/
+.claude/
 
 # Python
 __pycache__/

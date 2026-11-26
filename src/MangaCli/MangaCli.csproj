@@ -9,9 +9,13 @@
     <AssemblyName>MangaCli</AssemblyName>
     <RootNamespace>MangaCli</RootNamespace>
     <Version>1.7.0</Version>
+    <Product>KomaFlow</Product>
+    <Company>rinmashiro0529</Company>
+    <Description>KomaFlow Headless CLI</Description>
     <ApplicationIcon>..\MangaGui\Assets\app.ico</ApplicationIcon>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <SelfContained Condition="'$(SelfContained)' == ''">false</SelfContained>
   </PropertyGroup>
 
   <ItemGroup>

@@ -10,11 +10,14 @@
     <AssemblyName>MangaGui</AssemblyName>
     <RootNamespace>MangaGui</RootNamespace>
     <Version>1.7.0</Version>
+    <Product>KomaFlow</Product>
+    <Company>rinmashiro0529</Company>
+    <Description>KomaFlow - Colab Multi-Account Manga Translation Workbench</Description>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <!-- 始终 framework-dependent 发布；也让引用本项目的 MangaCli 能按相同参数 publish（NETSDK1151）。 -->
-    <SelfContained>false</SelfContained>
+    <!-- 默认 framework-dependent 发布；正式打安装包/便携包时可通过 -p:SelfContained=true 覆写为共享自包含发布。 -->
+    <SelfContained Condition="'$(SelfContained)' == ''">false</SelfContained>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,0 +1,5 @@
+{
+  "translator": { "translator": "sakura", "target_lang": "CHS" },
+  "ocr": { "ocr": "48px" },
+  "inpainter": { "inpainter": "lama_large" }
+}

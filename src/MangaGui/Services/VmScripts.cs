@@ -292,10 +292,10 @@ public sealed class VmScripts
         foreach (var file in BundledGuiAssets)
         {
             var localPath = Path.Combine(BundledAssetsDirectory!, file);
-            if (string.Equals(file, UserSakuraDictFileName, StringComparison.OrdinalIgnoreCase)
-                && ExistingScriptsDirectory is not null)
+            if (string.Equals(file, UserSakuraDictFileName, StringComparison.OrdinalIgnoreCase))
             {
-                var userDict = Path.Combine(ExistingScriptsDirectory, UserSakuraDictFileName);
+                var userDict = _store.LoadSettings().CustomSakuraDictPath
+                    ?? (ExistingScriptsDirectory is null ? null : Path.Combine(ExistingScriptsDirectory, UserSakuraDictFileName));
                 if (File.Exists(userDict))
                 {
                     localPath = userDict;
@@ -444,7 +444,7 @@ public sealed class VmScripts
         TimeSpan? overallTimeout = null,
         int maxConsecutivePollFailures = 8,
         string? profileHint = null,
-        string? inpaintMode = null)
+        string? inpaintMode = null, Action? onPoll = null)
     {
         var interval = pollInterval ?? TimeSpan.FromSeconds(15);
         // A cold high-tier deploy or flock -w may need extended time.
@@ -515,6 +515,7 @@ public sealed class VmScripts
                 TimeSpan.FromMinutes(1),
                 cancellationToken: ct).ConfigureAwait(false);
 
+            onPoll?.Invoke();
             if (!poll.IsSuccess
                 || !TryParsePollFrame(poll.StdOut, out var next, out var chunk, out var rc, out var running))
             {

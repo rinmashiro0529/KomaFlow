@@ -88,7 +88,7 @@ fetch() {
   mkdir -p "$(dirname "$dest")" || return 1
   if command -v aria2c >/dev/null; then
     aria2c -x 16 -s 16 -k 1M --file-allocation=none --continue=true --auto-file-renaming=false \
-      --allow-overwrite=true --max-tries=3 --retry-wait=5 --summary-interval=0 \
+      --allow-overwrite=true --max-tries=3 --retry-wait=5 --summary-interval=15 \
       -d "$(dirname "$dest")" -o "$(basename "$dest").part" "$url" || return 1
   else
     curl -fL --retry 3 --retry-delay 5 -sS -o "${dest}.part" "$url" || return 1

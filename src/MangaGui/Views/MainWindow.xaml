@@ -93,6 +93,7 @@
                                 </ui:MenuItem.Icon>
                             </ui:MenuItem>
                             <Separator />
+                            <ui:MenuItem Header="环境检查与修复…" Command="{Binding PlacementTarget.DataContext.OpenEnvironmentCommand, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}" />
                             <ui:MenuItem Header="选择脚本目录…"
                                          Command="{Binding PlacementTarget.DataContext.BrowseScriptsFolderCommand, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}">
                                 <ui:MenuItem.Icon>
@@ -181,7 +182,7 @@
                                     IsClosable="False"
                                     AutomationProperties.LiveSetting="Assertive" />
                         <ui:Button Grid.Column="1"
-                                   Content="停止该账号会话"
+                                   Content="停止此账号的 manga"
                                    Command="{Binding StopOtherAccountSessionCommand}"
                                    Visibility="{Binding CanStopOtherAccount, Converter={StaticResource BoolToVis}}"
                                    VerticalAlignment="Center"
@@ -256,8 +257,8 @@
                                     IsClosable="False"
                                     AutomationProperties.LiveSetting="Polite" />
                         <ui:Button Grid.Column="1"
-                                   Content="选择脚本目录…"
-                                   Command="{Binding BrowseScriptsFolderCommand}"
+                                   Content="环境检查与修复…"
+                                   Command="{Binding OpenEnvironmentCommand}"
                                    VerticalAlignment="Center"
                                    Margin="8,0,0,0" />
                     </Grid>
@@ -865,7 +866,7 @@
                                                     <ui:SymbolIcon Symbol="Folder24" />
                                                 </ui:MenuItem.Icon>
                                             </ui:MenuItem>
-                                            <ui:MenuItem Header="重试"
+                                            <ui:MenuItem Header="从头重试"
                                                          Command="{Binding PlacementTarget.Tag.RetryTaskCommand, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"
                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"
                                                          Visibility="{Binding PlacementTarget.DataContext.CanRetry, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}, Converter={StaticResource BoolToVis}}">
@@ -974,7 +975,7 @@
                                                    Visibility="{Binding CanRemove, Converter={StaticResource BoolToVis}}"
                                                    AutomationProperties.Name="{Binding FileName, StringFormat={}移除 {0}}" />
                                         <ui:Button Appearance="Transparent"
-                                                   Content="重试"
+                                                   Content="从头重试"
                                                    Margin="8,0,0,0"
                                                    Command="{Binding DataContext.RetryTaskCommand, RelativeSource={RelativeSource AncestorType={x:Type ui:FluentWindow}}}"
                                                    CommandParameter="{Binding}"

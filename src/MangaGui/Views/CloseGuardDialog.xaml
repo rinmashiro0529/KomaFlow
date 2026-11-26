@@ -6,7 +6,7 @@
                        Title="运行环境仍在计费"
                        DialogMaxWidth="480"
                        PrimaryButtonText="停止计费并退出"
-                       SecondaryButtonText="最小化到托盘"
+                       SecondaryButtonText="后台继续运行（仍计费）"
                        CloseButtonText="取消">
     <views:AppContentDialog.Resources>
         <Style TargetType="{x:Type views:CloseGuardDialog}"

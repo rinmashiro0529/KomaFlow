@@ -1,0 +1,25 @@
+<views:AppContentDialog x:Class="MangaGui.Views.EnvironmentCheckDialog" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" xmlns:views="clr-namespace:MangaGui.Views" Title="环境检查与修复" DialogMaxWidth="640" PrimaryButtonText="账号管理" CloseButtonText="关闭">
+    <views:AppContentDialog.Resources>
+        <Style TargetType="{x:Type views:EnvironmentCheckDialog}" BasedOn="{StaticResource {x:Type ui:ContentDialog}}" />
+    </views:AppContentDialog.Resources>
+    <ScrollViewer MaxHeight="420" VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <TextBlock FontWeight="SemiBold" Text="发行包与 colab CLI" />
+            <TextBlock TextWrapping="Wrap" Text="{Binding Assets}" />
+            <TextBlock TextWrapping="Wrap" Text="{Binding Colab}" />
+            <WrapPanel><ui:Button Content="选择 colab.exe…" Tag="colab" Click="OnChoose" /><ui:Button Content="复制安装命令" Tag="pipx install google-colab-cli" Click="OnCopy" Margin="4,0,0,0" /></WrapPanel>
+            <TextBlock Margin="0,12,0,0" FontWeight="SemiBold" Text="Windows OpenSSH 与密钥" />
+            <TextBlock TextWrapping="Wrap" Text="{Binding Ssh}" />
+            <WrapPanel><ui:Button Content="生成 Ed25519 密钥" IsEnabled="{Binding CanGenerate}" Click="OnGenerate" /><ui:Button Content="复制命令" Tag="ssh-keygen -t ed25519" Click="OnCopy" Margin="4,0,0,0" /><ui:Button Content="Windows 可选功能" Click="OnFeatures" Margin="4,0,0,0" /></WrapPanel>
+            <TextBlock Margin="0,12,0,0" FontWeight="SemiBold" Text="gcloud 与 Colab 账号" />
+            <TextBlock TextWrapping="Wrap" Text="{Binding Account}" />
+            <TextBlock Margin="0,12,0,0" FontWeight="SemiBold" Text="术语表与翻译引擎" />
+            <TextBlock TextWrapping="Wrap" Text="{Binding Glossary}" />
+            <TextBlock TextWrapping="Wrap" Text="sakura_dict.txt 可供两引擎使用；prompt_hq.yaml 用于 mtui 高质量翻译。更改后重新部署。" />
+            <TextBlock TextWrapping="Wrap" Text="{Binding Mit}" />
+            <WrapPanel><ui:Button Content="选择术语表…" Tag="dict" Click="OnChoose" /><ui:Button Content="选择 mit 配置目录…" Tag="mit" Click="OnChoose" Margin="4,0,0,0" /></WrapPanel>
+            <TextBlock x:Name="Feedback" TextWrapping="Wrap" />
+            <ui:Button Margin="0,12,0,0" Content="全部重新检查" Click="OnRefresh" />
+        </StackPanel>
+    </ScrollViewer>
+</views:AppContentDialog>

@@ -8,7 +8,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>MangaCli</AssemblyName>
     <RootNamespace>MangaCli</RootNamespace>
-    <Version>1.6.0</Version>
+    <Version>1.7.0</Version>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>

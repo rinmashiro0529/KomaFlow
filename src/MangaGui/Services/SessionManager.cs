@@ -2,7 +2,7 @@ using MangaGui.Models;
 
 namespace MangaGui.Services;
 
-public sealed record StopResult(bool VerifiedStopped, string Message, string? RawOutput = null);
+public sealed record StopResult(bool VerifiedStopped, string Message, string? RawOutput = null, int RemainingUnnamedAssignments = 0);
 
 public sealed record StartupProbeResult(
     StartupProbeOutcome Outcome,
@@ -687,9 +687,10 @@ public sealed class SessionManager
                             var hint = newUnnamed > 0
                                 ? $"{acctTag}创建 {tierSpec.ShortName} 的请求没有正常返回，云端多出 {newUnnamed} 个未命名实例（很可能就是本次申请的实例，正在计费）。{VmScripts.UnnamedAssignmentHint}"
                                 : newRes.CombinedOutput.Contains("quota", StringComparison.OrdinalIgnoreCase)
+                                       || newRes.CombinedOutput.Contains("503", StringComparison.Ordinal)
                                        || newRes.CombinedOutput.Contains("unavailable", StringComparison.OrdinalIgnoreCase)
                                        || newRes.CombinedOutput.Contains("Allocation refused", StringComparison.OrdinalIgnoreCase)
-                                ? $"{acctTag}{tierSpec.ShortName} GPU 当前库存不足或配额受限，请稍后重试（不会自动降级到其他 GPU）。"
+                                ? $"{acctTag}{tierSpec.ShortName} GPU 当前库存不足或配额受限，已核实未创建新实例，可改选 A100 标准 / L4 或换号重试（不会自动降级到其他 GPU）。"
                                 : $"{acctTag}创建 {tierSpec.ShortName} 会话失败：{TrimOneLine(newRes.CombinedOutput)}";
                             ClearActiveAccountTracking();
                             FailDeployIfEpoch(myEpoch, hint, newRes.CombinedOutput, vmAlive: false);
@@ -782,11 +783,12 @@ public sealed class SessionManager
 
             // 3. Stream vm_setup.sh execution
             UpdateStateIfEpoch(myEpoch, SessionState.Deploying, DeployStage.Stage1TranslatorEnv, hasActiveVm: true,
-                detail: "正在安装环境与模型（约 10 分钟，首次下载较慢）...");
+                detail: "正在安装环境与模型（首次下载耗时取决于模型大小和网络速度）...");
             Log(LogLevel.Info, $"正在 VM 上执行幂等部署脚本 vm_setup.sh（引擎：{engine}）...");
 
             // Run detached + poll with short ssh calls: a single 30-minute ssh dies silently
             // mid-deploy ("client_loop: send disconnect") while the VM keeps billing.
+            var elapsed = System.Diagnostics.Stopwatch.StartNew();
             var currentStage = DeployStage.Stage1TranslatorEnv;
             var passProfileHint = setupProfileHint != GpuProfiles.Auto || effectiveInpaint != InpaintModes.LamaLarge
                 ? setupProfileHint
@@ -806,10 +808,16 @@ public sealed class SessionManager
                         UpdateStateIfEpoch(myEpoch, SessionState.Deploying, currentStage, hasActiveVm: true, detail: stageLabel);
                         Log(LogLevel.Info, $"部署进度：{stageLabel}");
                     }
+                    if (currentStage is DeployStage.Stage2LlamaModel or DeployStage.Stage5TranslatorWarmup)
+                        UpdateStateIfEpoch(myEpoch, SessionState.Deploying, currentStage, true, detail: $"{FormatDeployStage(currentStage)} · 已等待 {elapsed.Elapsed:mm\\:ss} · 最近日志 {DateTime.Now:HH:mm:ss}：{TrimOneLine(line)}");
                 },
                 ct,
                 profileHint: passProfileHint,
-                inpaintMode: passInpaint).ConfigureAwait(false);
+                inpaintMode: passInpaint, onPoll: () =>
+                {
+                    if (currentStage is DeployStage.Stage2LlamaModel or DeployStage.Stage5TranslatorWarmup)
+                        UpdateStateIfEpoch(myEpoch, SessionState.Deploying, currentStage, true, detail: $"{FormatDeployStage(currentStage)} · 已等待 {elapsed.Elapsed:mm\\:ss} · 最近轮询 {DateTime.Now:HH:mm:ss}");
+                }).ConfigureAwait(false);
 
             if (!IsEpochCurrent(myEpoch)) return false;
 
@@ -1010,7 +1018,8 @@ public sealed class SessionManager
                         Log(LogLevel.Success, $"已核实 manga 会话停止。{balanceNote}");
                         return new StopResult(
                             true,
-                            $"manga 会话已停止，但云端还有 {query.UnnamedAssignments} 个未命名实例。{VmScripts.UnnamedAssignmentHint}");
+                            $"账号「{stoppedAccountName ?? "系统默认 ADC"}」的 manga 会话已停止，但仍有 {query.UnnamedAssignments} 个未命名实例。{VmScripts.UnnamedAssignmentHint}",
+                            RemainingUnnamedAssignments: query.UnnamedAssignments);
                     }
 
                     Log(LogLevel.Success, $"已严格核实云端无活动会话，计费已安全结束。{balanceNote}");
@@ -1316,7 +1325,7 @@ public sealed class SessionManager
                 ? $"账号「{ctx.DisplayName}」的 manga 会话已停，但仍有 {query.UnnamedAssignments} 个未命名实例。"
                 : $"已核实停止账号「{ctx.DisplayName}」的云端会话。";
             Log(LogLevel.Success, msg);
-            return new StopResult(true, msg);
+            return new StopResult(true, msg, RemainingUnnamedAssignments: query.UnnamedAssignments);
         }
 
         var hint = _accounts.BuildManualStopCommandHint(accountId);
@@ -1396,9 +1405,7 @@ public sealed class SessionManager
                 && string.Equals(item.Account.Id, presentList[0].Account.Id, StringComparison.OrdinalIgnoreCase);
             if (!isPrimaryOrphan && (item.Query.Presence == SessionPresence.Present || item.Query.UnnamedAssignments > 0))
             {
-                var detail = item.Query.Presence == SessionPresence.Present
-                    ? $"账号「{item.Account.Name}」云端存在正在计费的 manga 会话！"
-                    : $"账号「{item.Account.Name}」云端有 {item.Query.UnnamedAssignments} 个未命名实例正在计费。";
+                var detail = OtherAccountDetail(item.Account.Name, item.Query);
                 secondaryWarnings.Add(new OtherAccountSessionWarning(
                     item.Account.Id,
                     item.Account.Name,
@@ -1465,6 +1472,10 @@ public sealed class SessionManager
         return new StartupProbeResult(StartupProbeOutcome.Idle, "当前无活动会话。");
     }
 
+    private static string OtherAccountDetail(string name, SessionQueryResult query) => $"账号「{name}」："
+        + (query.Presence == SessionPresence.Present ? "具名 manga 会话正在计费。" : "没有具名 manga 会话。")
+        + (query.UnnamedAssignments > 0 ? $"另有 {query.UnnamedAssignments} 个未命名 [?] 实例。{VmScripts.UnnamedAssignmentHint}" : "");
+
     private async Task ScanOtherAccountsForOrphansAsync(string? excludeAccountId, CancellationToken ct)
     {
         if (_accounts is null) return;
@@ -1490,9 +1501,7 @@ public sealed class SessionManager
         {
             if (r.Query.Presence == SessionPresence.Present || r.Query.UnnamedAssignments > 0)
             {
-                var msg = r.Query.Presence == SessionPresence.Present
-                    ? $"警告：另一账号「{r.Account.Name}」云端仍有活跃 manga 会话正在计费！"
-                    : $"警告：另一账号「{r.Account.Name}」云端有 {r.Query.UnnamedAssignments} 个未命名实例正在计费。";
+                var msg = OtherAccountDetail(r.Account.Name, r.Query);
                 warnings.Add(new OtherAccountSessionWarning(
                     r.Account.Id,
                     r.Account.Name,

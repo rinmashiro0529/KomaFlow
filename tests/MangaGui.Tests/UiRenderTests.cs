@@ -519,7 +519,7 @@ public sealed class UiRenderTests : IClassFixture<WpfStaFixture>
                 taskMenu.PlacementTarget = rowContainer;
                 var taskMenuItems = taskMenu.Items.OfType<Wpf.Ui.Controls.MenuItem>().ToList();
                 Assert.Equal(4, taskMenuItems.Count);
-                Assert.Equal(new[] { "打开所在位置", "重试", "查看失败日志", "移除" },
+                Assert.Equal(new[] { "打开所在位置", "从头重试", "查看失败日志", "移除" },
                     taskMenuItems.Select(i => i.Header).ToArray());
                 Assert.All(taskMenuItems, i => Assert.NotNull(i.Command));
 
@@ -621,6 +621,7 @@ public sealed class UiRenderTests : IClassFixture<WpfStaFixture>
                     ("orphan_session", () => new OrphanSessionDialog()),
                     ("close_guard", () => new CloseGuardDialog(new ConfirmStopSummary("42 min", "约 1.36 CU", 0, false))),
                     ("log_viewer", () => new LogViewerDialog("damaged.zip 的日志", "line1\nline2\nAuthorization: Bearer secret")),
+                    ("environment", () => new EnvironmentCheckDialog()),
                     ("diagnostics", () => new DiagnosticsDialog(diagSnapshot)),
                 };
 
@@ -805,6 +806,7 @@ public sealed class UiRenderTests : IClassFixture<WpfStaFixture>
                     ("orphan_session", true, () => new OrphanSessionDialog()),
                     ("close_guard", true, () => new CloseGuardDialog(new ConfirmStopSummary("42 min", "约 1.36 CU", 0, false))),
                     ("log_viewer", true, () => new LogViewerDialog("damaged.zip 的日志", "line1\nline2")),
+                    ("environment", true, () => new EnvironmentCheckDialog()),
                     ("diagnostics", true, () => new DiagnosticsDialog(diagSnapshot)),
                 };
 

@@ -122,6 +122,8 @@ public sealed class AccountManager
         }
     }
 
+    public static bool HasLocalCredentials(ColabAccountProfile profile) => File.Exists(profile.AdcCredentialsPath ?? Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "gcloud", "application_default_credentials.json"));
+
     public bool HasMultipleAccounts
     {
         get { lock (_lock) return _accounts.Count > 1; }
@@ -366,10 +368,6 @@ public sealed class AccountManager
 
             _accounts.RemoveAt(idx);
             _quotas.Remove(removed.Id);
-            if (_accounts.All(a => !a.Enabled))
-            {
-                _accounts[0].Enabled = true;
-            }
             _selectedAccountId = ResolveValidSelectedIdLocked(_selectedAccountId);
         }
 
@@ -397,7 +395,7 @@ public sealed class AccountManager
     public async Task<AccountImportResult> ImportAccountAsync(
         string sourceJsonPath,
         string? preferredName = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, string? reauthorizeAccountId = null)
     {
         if (string.IsNullOrWhiteSpace(sourceJsonPath) || !File.Exists(sourceJsonPath))
         {
@@ -440,6 +438,9 @@ public sealed class AccountManager
             }
         }
 
+        if (reauthorizeAccountId is not null && duplicate?.Id != reauthorizeAccountId)
+            return new AccountImportResult(false, ErrorMessage: "所选 Google 账号与原账号不一致或原账号身份未经验证；未更改凭据。请选原账号，或用添加账号单独导入。");
+
         ColabAccountProfile targetProfile;
         bool updatedExisting;
         if (duplicate is not null)
@@ -460,7 +461,7 @@ public sealed class AccountManager
                 live.ColabConfigPath = destCfg;
                 live.MaskedEmail = verify.MaskedEmail ?? live.MaskedEmail;
                 live.EmailHash = verify.EmailHash ?? live.EmailHash;
-                live.Enabled = true;
+                if (reauthorizeAccountId is null) live.Enabled = true;
                 if (!string.IsNullOrWhiteSpace(preferredName))
                 {
                     live.Name = preferredName.Trim();
@@ -551,10 +552,6 @@ public sealed class AccountManager
         try
         {
             var targets = GetEnabledAccounts();
-            if (targets.Count == 0)
-            {
-                targets = GetAccounts();
-            }
 
             lock (_lock)
             {
@@ -682,8 +679,8 @@ public sealed class AccountManager
             {
                 var targetId = ResolveValidSelectedIdLocked(_selectedAccountId);
                 var target = _accounts.FirstOrDefault(a => string.Equals(a.Id, targetId, StringComparison.OrdinalIgnoreCase))
-                    ?? _accounts.FirstOrDefault();
-                if (target is null)
+                    ?? _accounts.FirstOrDefault(a => a.Enabled);
+                if (target is null || !target.Enabled)
                 {
                     return new AccountSelectionPlan([], "未配置任何 Colab 账号。", AllowFailover: false,
                         Warning: "请先添加一个 Colab 账号。");
@@ -699,10 +696,6 @@ public sealed class AccountManager
 
             // AutoHighestBalance mode
             var enabled = _accounts.Where(a => a.Enabled).ToList();
-            if (enabled.Count == 0)
-            {
-                enabled = _accounts.ToList();
-            }
 
             if (enabled.Count == 0)
             {
@@ -860,7 +853,9 @@ public sealed class AccountManager
             var combined = result.CombinedOutput;
             var msg = AuthExpiredRegex.IsMatch(combined)
                 ? "凭据授权无效或已过期，请重新执行 Google 登录。"
-                : $"凭据校验失败：{TrimFirstLine(combined, $"exit={result.ExitCode}")}";
+                : ColabCli.IsRateLimited(result) ? "请求限流，请稍后重试。"
+                : combined.Contains("403") || combined.Contains("permission", StringComparison.OrdinalIgnoreCase) ? "账号缺少访问 Colab 的权限。"
+                : "暂时无法校验账号，请检查网络或代理后重试。";
             return new WhoamiVerificationResult(false, ErrorMessage: msg);
         }
 

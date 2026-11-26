@@ -9,6 +9,7 @@
     <AssemblyName>MangaCli</AssemblyName>
     <RootNamespace>MangaCli</RootNamespace>
     <Version>1.7.0</Version>
+    <ApplicationIcon>..\MangaGui\Assets\app.ico</ApplicationIcon>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>

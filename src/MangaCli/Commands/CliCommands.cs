@@ -31,6 +31,8 @@ internal static class CliCommands
                                             设置 G4 96G 子模式（flagship=122B / balanced=32B+Sakura）
           settings set account auto|<id>    设置账号选号模式（auto=按余额轮询，或指定账号 ID）
           settings set output-dir <dir|default>
+          settings set sakura-dict <file|default>
+                                            设置独立术语表文件（mtui 无需 manga.json）
           settings set scripts-dir <dir>    设置 colab_manga 脚本目录（仅旧引擎 mit 需要 manga.json；自定义术语表 sakura_dict.txt 也用此目录；设置时目录仍需含 manga.json）
           status [--probe]                  会话与计费状态（--probe 联网探测，持锁）
           run [路径...] --minutes N [选项]  部署→翻译→停机 全流程
@@ -206,6 +208,7 @@ internal static class CliCommands
                 ["theme"] = settings.Theme,
                 ["output_dir"] = settings.OutputDir,
                 ["colab_exe_path"] = settings.ColabExePath,
+                ["custom_sakura_dict_path"] = settings.CustomSakuraDictPath,
                 ["translation_engine"] = TranslationEngines.Normalize(settings.TranslationEngine),
                 ["preferred_gpu_tier"] = GpuTiers.Normalize(settings.PreferredGpuTier),
                 ["high_quality_inpaint_mode"] = InpaintModes.Normalize(settings.HighQualityInpaintMode),
@@ -231,7 +234,7 @@ internal static class CliCommands
 
         if (args[0] != "set" || args.Count < 3)
         {
-            return r.Fail(ExitCodes.Usage, "用法：settings set engine|gpu|inpaint|g4-mode|account|output-dir|scripts-dir <value>");
+            return r.Fail(ExitCodes.Usage, "用法：settings set engine|gpu|inpaint|g4-mode|account|output-dir|scripts-dir|sakura-dict <value>");
         }
 
         if (!c.TryAcquireLock())
@@ -297,6 +300,22 @@ internal static class CliCommands
 
                 r.ExitCode = ExitCodes.Ok;
                 r.Message = $"脚本目录已设为 {value}";
+                break;
+            }
+            case "sakura-dict":
+            {
+                var normalized = value == "default" ? null : value;
+                if (normalized is not null && !File.Exists(normalized))
+                {
+                    return r.Fail(ExitCodes.Usage, $"术语表文件不存在：{normalized}");
+                }
+
+                var store = new SessionStore(c.Options.DataDir);
+                var settings = store.LoadSettings();
+                settings.CustomSakuraDictPath = normalized;
+                store.SaveSettings(settings);
+                r.ExitCode = ExitCodes.Ok;
+                r.Message = normalized is null ? "独立术语表已清除（回退默认空表或脚本目录）" : $"独立术语表已设为 {normalized}";
                 break;
             }
             case "gpu":

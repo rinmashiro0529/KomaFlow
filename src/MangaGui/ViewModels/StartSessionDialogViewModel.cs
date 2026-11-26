@@ -72,24 +72,27 @@ public partial class StartSessionDialogViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasAccountBalanceWarning))]
     [NotifyPropertyChangedFor(nameof(AccountBalanceWarningMessage))]
+    [NotifyPropertyChangedFor(nameof(CanConfirm))]
     private StartAccountOption? _selectedAccountOption;
 
     public string SelectedGpuTierId => SelectedGpuTier.Id;
 
     public double SelectedGpuRate => SelectedGpuTier.DefaultCuPerHour;
 
-    public bool ShowFlux2Option => SelectedGpuTier.SupportsFlux2Inpaint;
+    public bool MtuiEngine { get; init; } = true;
 
-    public bool ShowG4SubModeOption => SelectedGpuTier.SupportsG4SubMode;
+    public bool ShowFlux2Option => MtuiEngine && SelectedGpuTier.SupportsFlux2Inpaint;
+
+    public bool ShowG4SubModeOption => MtuiEngine && SelectedGpuTier.SupportsG4SubMode;
 
     public string EffectiveInpaintMode => GpuTiers.ResolveEffectiveInpaintMode(
         SelectedGpuTier.Id,
-        UseFlux2Inpaint ? InpaintModes.Flux2Klein : InpaintModes.LamaLarge);
+        ShowFlux2Option && UseFlux2Inpaint ? InpaintModes.Flux2Klein : InpaintModes.LamaLarge);
 
-    public string EffectiveG4SubMode => UseG4BalancedMode ? G4SubModes.Balanced : G4SubModes.Flagship;
+    public string EffectiveG4SubMode => ShowG4SubModeOption && UseG4BalancedMode ? G4SubModes.Balanced : G4SubModes.Flagship;
 
     public string BillingHintText =>
-        $"{SelectedGpuTier.ShortName} 参考 {SelectedGpuTier.RateDisplay}（启动后按 Colab 实际费率校准），运行环境存在即计费。";
+        $"{SelectedGpuTier.ShortName} 参考 {SelectedGpuTier.RateDisplay}（启动后按 Colab 实际费率校准），运行环境存在即计费。{(SelectedGpuTier == GpuTiers.A100Spec ? "普通 A100 实际分配 40G / 80G 会影响费率。" : "")} 到时处理由本机应用执行，非云端硬上限。";
 
     public string Duration30Label => $"30 分钟（约 {SelectedGpuRate * 0.5:F2} CU）";
 
@@ -99,11 +102,14 @@ public partial class StartSessionDialogViewModel : ObservableObject
 
     public bool ShowAccountPicker => AccountOptions.Count > 0;
 
+    public bool ShowAccountSection => ShowAccountPicker || _noAccounts;
+
     public bool IsUnlimited => SelectedChoice == DurationChoice.Unlimited;
 
     public bool IsAutoStopEnabled => !IsUnlimited;
 
-    public bool CanConfirm => !IsUnlimited || AcknowledgeUnlimitedBilling;
+    public bool CanConfirm => (!IsUnlimited || AcknowledgeUnlimitedBilling) && SelectedAccountOption?.Status != AccountQuotaStatus.AuthExpired && !_noAccounts;
+    private bool _noAccounts;
 
     public int? PlannedMinutes => SelectedChoice switch
     {
@@ -129,16 +135,12 @@ public partial class StartSessionDialogViewModel : ObservableObject
         get
         {
             var opt = SelectedAccountOption;
+            if (_noAccounts || opt?.Status == AccountQuotaStatus.AuthExpired) return "请在账号管理中登录/重新授权。";
             if (opt is null) return string.Empty;
 
             if (!string.IsNullOrWhiteSpace(opt.WarningNote))
             {
                 return opt.WarningNote;
-            }
-
-            if (opt.Status == AccountQuotaStatus.AuthExpired)
-            {
-                return "所选账号授权已失效，请在「账号管理」中重新登录后再启动。";
             }
 
             if (opt.Status == AccountQuotaStatus.Ok && opt.BalanceCu is { } bal)
@@ -169,6 +171,7 @@ public partial class StartSessionDialogViewModel : ObservableObject
         IReadOnlyList<StartAccountOption> options,
         string? initialSpec)
     {
+        _noAccounts = options.Count == 0;
         AccountOptions.Clear();
         foreach (var opt in options)
         {
@@ -179,7 +182,9 @@ public partial class StartSessionDialogViewModel : ObservableObject
                 string.Equals(o.Spec, initialSpec, StringComparison.OrdinalIgnoreCase))
             ?? AccountOptions.FirstOrDefault();
 
+        OnPropertyChanged(nameof(CanConfirm));
         OnPropertyChanged(nameof(ShowAccountPicker));
+        OnPropertyChanged(nameof(ShowAccountSection));
         OnPropertyChanged(nameof(HasAccountBalanceWarning));
         OnPropertyChanged(nameof(AccountBalanceWarningMessage));
     }

@@ -30,7 +30,7 @@ public sealed partial class AccountBadgeItem : ObservableObject
         double minBalanceCu)
     {
         Id = profile.Id;
-        _name = profile.Name;
+        _name = profile.AdcCredentialsPath is null && !Services.AccountManager.HasLocalCredentials(profile) ? "尚未登录 Colab 账号" : profile.Name;
         _maskedEmail = profile.MaskedEmail ?? (profile.AdcCredentialsPath is null ? "系统默认 ADC" : "ADC 凭据");
         _enabled = profile.Enabled;
         _status = quota.Status;
@@ -49,8 +49,8 @@ public sealed partial class AccountBadgeItem : ObservableObject
         AccountQuotaStatus.Ok when BalanceCu.HasValue => $"{BalanceCu.Value:F2} CU",
         AccountQuotaStatus.Refreshing => "刷新中…",
         AccountQuotaStatus.AuthExpired => "授权失效",
-        AccountQuotaStatus.Error => "查询失败",
-        _ => "未查询"
+        AccountQuotaStatus.Error => "暂不可确认",
+        _ => "未验证"
     };
 
     public string CompactLabel => ActiveAssignments is > 0

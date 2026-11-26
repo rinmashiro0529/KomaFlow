@@ -8,7 +8,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>MangaCli</AssemblyName>
     <RootNamespace>MangaCli</RootNamespace>
-    <Version>1.6.0</Version>
+    <Version>1.7.0</Version>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
@@ -40,6 +40,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="..\..\assets\prompt_hq.yaml" Link="assets\prompt_hq.yaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\assets\manga.example.json" Link="assets\manga.example.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

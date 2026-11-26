@@ -9,7 +9,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>MangaGui</AssemblyName>
     <RootNamespace>MangaGui</RootNamespace>
-    <Version>1.6.0</Version>
+    <Version>1.7.0</Version>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <!-- 始终 framework-dependent 发布；也让引用本项目的 MangaCli 能按相同参数 publish（NETSDK1151）。 -->
@@ -27,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\..\assets\manga.example.json" Link="assets\manga.example.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\assets\vm_setup.sh" Link="assets\vm_setup.sh">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

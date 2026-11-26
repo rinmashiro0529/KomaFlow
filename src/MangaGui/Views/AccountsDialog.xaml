@@ -193,6 +193,7 @@
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ui:Button Content="重新授权" Visibility="{Binding IsErrorOrExpired, Converter={StaticResource BoolToVis}}" Command="{Binding DataContext.ReauthorizeCommand, RelativeSource={RelativeSource AncestorType={x:Type views:AccountsDialog}}}" CommandParameter="{Binding}" Margin="0,0,4,0" />
                                     <ui:Button Content="选用"
                                                Command="{Binding DataContext.SelectManualCommand, RelativeSource={RelativeSource AncestorType={x:Type views:AccountsDialog}}}"
                                                CommandParameter="{Binding}"

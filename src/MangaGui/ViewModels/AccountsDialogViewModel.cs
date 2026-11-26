@@ -105,8 +105,10 @@ public sealed partial class AccountsDialogViewModel : ObservableObject, IDisposa
         IsRefreshing = true;
         try
         {
-            await _accounts.RefreshAllQuotasAsync(force: true);
-            SetFeedback("已刷新全部启用账号的剩余额度。", isError: false);
+            var targets = _accounts.GetEnabledAccounts();
+            var results = await _accounts.RefreshAllQuotasAsync(force: true);
+            int ok = targets.Count(a => results.TryGetValue(a.Id, out var q) && q.Status == AccountQuotaStatus.Ok);
+            SetFeedback($"已刷新：成功 {ok} / 失败 {targets.Count - ok}。", isError: ok != targets.Count);
         }
         catch (Exception ex)
         {
@@ -134,7 +136,12 @@ public sealed partial class AccountsDialogViewModel : ObservableObject, IDisposa
     }
 
     [RelayCommand]
-    private async Task AddByBrowserLoginAsync()
+    private Task ReauthorizeAsync(AccountBadgeItem? item) => item is null ? Task.CompletedTask : BrowserLoginAsync(item.Id);
+
+    [RelayCommand]
+    private Task AddByBrowserLoginAsync() => BrowserLoginAsync(null);
+
+    private async Task BrowserLoginAsync(string? accountId)
     {
         if (IsLoggingIn) return;
         ClearFeedback();
@@ -147,8 +154,13 @@ public sealed partial class AccountsDialogViewModel : ObservableObject, IDisposa
         IsLoggingIn = true;
         LoginAuthUrl = string.Empty;
         HasLoginAuthUrl = false;
-        LoginStatusText = "正在启动隔离的 Google 授权流程（不会影响现有账号）...";
+        LoginStatusText = "正在启动隔离的 Google 授权流程（最长等待 5 分钟，不会影响现有账号）...";
 
+        var started = System.Diagnostics.Stopwatch.StartNew();
+        using var timer = new System.Threading.Timer(_ => _dispatchToUi(() =>
+        {
+            if (IsLoggingIn && !ct.IsCancellationRequested) LoginStatusText = $"正在等待浏览器授权或权限验证 · 已等待 {started.Elapsed:mm\\:ss}（浏览器授权限时 5 分钟）";
+        }), null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
         GcloudLoginResult? loginResult = null;
         try
         {
@@ -169,7 +181,7 @@ public sealed partial class AccountsDialogViewModel : ObservableObject, IDisposa
             }
 
             LoginStatusText = "授权完成，正在验证 Colab 权限并获取剩余额度...";
-            var importRes = await _accounts.ImportAccountAsync(loginResult.TempCredentialsPath, preferredName: null, ct);
+            var importRes = await _accounts.ImportAccountAsync(loginResult.TempCredentialsPath, preferredName: null, ct, accountId);
             if (!importRes.Success || importRes.Profile is null)
             {
                 SetFeedback(importRes.ErrorMessage ?? "导入新账号凭据失败。", isError: true);
@@ -293,7 +305,7 @@ public sealed partial class AccountsDialogViewModel : ObservableObject, IDisposa
         Reload();
         if (ok)
         {
-            SetFeedback($"已从列表移除「{item.Name}」（磁盘凭据文件已保留以便随时重新导入）。", isError: false);
+            SetFeedback($"已从列表移除「{item.Name}」（凭据文件已保留）。{(_accounts.GetEnabledAccounts().Count == 0 ? "请启用或添加账号。" : "")}", isError: false);
         }
         else if (!string.IsNullOrWhiteSpace(err))
         {

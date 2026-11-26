@@ -1,4 +1,37 @@
-# 漫画翻译 GUI（Colab L4） · v1.5.0
+# KomaFlow 漫画翻译工作台 · v1.7.0
+
+**Windows x64：先安装 .NET 8 Desktop Runtime，再完整解压发行包。** 保持 `MangaGui.exe`、`MangaCli.exe` 和 `assets/` 同级，不要只复制 exe。
+
+### 5 分钟完成本地环境检查
+
+1. 打开「更多 → 环境检查与修复」，确认内置资产完整。检查本身不申请 GPU；五分钟不含下载安装工具、授权和首次云端模型下载。
+2. 定位 `colab.exe`，检查 Windows OpenSSH 与 SSH 密钥。已有密钥不要覆盖。
+3. 打开「账号管理」，登录或导入 ADC，核对账号及额度。网络异常不等于授权失效；只启用愿意承担计费的账号。
+4. 默认 mtui 无需 `manga.json`，可独立选择术语表。mit 请将 `assets/manga.example.json` 复制为配置目录内的 `manga.json` 后按需编辑。
+5. 用以下命令预检，不创建计费实例：
+
+```powershell
+.\MangaCli.exe doctor
+.\MangaCli.exe precheck .\book.cbz
+.\MangaCli.exe settings get
+.\MangaCli.exe status
+```
+
+| GPU 档位 | 显存与用途 | 参考 CU/h（以实际分配为准） |
+|---|---|---:|
+| L4 | 22.5G，经济档 | 2.33 |
+| A100 标准 | 40G 或 80G，自适应 | 8.16 / 10.99 |
+| A100 High-RAM | 优先 80G，不保证分配 | 10.99（80G） |
+| G4 | 96G，旗舰或均衡模式 | 10.00 |
+
+| 症状 | 下一步 |
+|---|---|
+| 缺少 assets | 重新解压完整包，不要选择 mit 目录来修复 |
+| 授权失效 / 网络异常 | 前者重新授权；后者检查代理后刷新 |
+| 503 且已核实未分配 | 改选 A100 标准、L4 或另一个账号 |
+| STAGE2 / STAGE5 等待 | 查看最近部署日志；下载期间仍计费 |
+| 停机后仍有 `[?]` | 用提示中的账号打开 Colab 网页 → 管理会话，核对并手动停止 |
+
 
 基于 **WPF + C# + .NET 8 + WPF-UI + CommunityToolkit.Mvvm** 打造的原生 Windows 桌面客户端，自 v1.3.0 起采用 **Windows 11 Fluent 视觉体系**（Mica 窗口、系统强调色、浅/深/跟随系统主题、窗内 `ContentDialog`），围绕「多账号额度轮询与自动选号」、「防忘关持续扣费」、「严格成品校验」与「零侵入全自动串行漫画翻译」设计。
 
@@ -53,7 +86,7 @@
 1. **Windows 10 / 11 (x64)**，已安装 `.NET 8 Desktop Runtime`。
 2. **google-colab-cli**（自动优先定位 `colab.exe`，或从 `%USERPROFILE%\.local\bin\colab.cmd` 解包真实 `colab.exe`），已完成 ADC 认证。
 3. **本机 SSH**：PATH 中有 `ssh.exe`，且 `~/.ssh` 下有 `id_ed25519.pub` 或 `id_ecdsa.pub`（Colab 不接受 RSA 密钥）。缺失时启动自检会阻止申请 GPU。
-4. **翻译配置目录**（默认自动向上定位到 `Z:\控制台\colab_manga\`，或在界面中手动指定，用户指定具有最高优先级），只读取：
+4. **翻译配置目录**（默认自动向上定位到 含 `manga.json` 的上级目录，或在界面中手动指定，用户指定具有最高优先级），只读取：
    - `manga.json`（仅旧引擎 mit 需要；新引擎 mtui 使用随附的 `assets\mtui_config.json`）
    - `sakura_dict.txt`（可选：存在时替代随附空术语表，两引擎共用）
    （部署、翻译执行、进度轮询、打包与清理均由 GUI 内置的 `assets\vm_setup.sh` / `vm_job.sh` / `vm_status.sh` / `vm_pack.sh` 完成。`assets\vm_setup.sh` 是上级 `vm_setup.sh` 的加固版，上级原脚本不改动，命令行流程不受影响。）
@@ -64,7 +97,7 @@
 
 ```powershell
 # 进入开发目录
-cd Z:\控制台\colab_manga\gui
+# 在仓库根目录运行
 
 # 1. 构建解决方案（0 警告 0 错误）
 & "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe" build MangaGui.sln -c Release
@@ -72,7 +105,7 @@ cd Z:\控制台\colab_manga\gui
 # 2. 运行全部单元测试（Mock IColabCli，零 Colab 计费）
 & "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe" test MangaGui.sln -c Release
 
-# 3. 发布单文件绿色 exe（输出到 Z:\控制台\colab_manga\gui\publish\）
+# 3. 发布启动程序及配套资产（输出到 publish/）
 & "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe" publish src\MangaGui\MangaGui.csproj -c Release -r win-x64 --self-contained false `
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
 ```

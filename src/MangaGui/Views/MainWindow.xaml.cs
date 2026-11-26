@@ -112,8 +112,18 @@ public partial class MainWindow : FluentWindow
         }
     }
 
+    private async Task OnEnvironmentCheck()
+    {
+        var vm = _viewModel.CreateEnvironmentCheck();
+        vm.Refresh();
+        var result = await _dialogService.ShowContentDialogAsync(new EnvironmentCheckDialog { DataContext = vm }, DialogHost);
+        if (result == ContentDialogResult.Primary) await _viewModel.OpenAccountsDialogCommand.ExecuteAsync(null);
+        _viewModel.RunEnvironmentSelfCheck();
+    }
+
     private void WireViewModelEvents()
     {
+        _viewModel.RequestEnvironmentCheck += OnEnvironmentCheck;
         _viewModel.RequestStartDialog += ShowStartDialogAsync;
         _viewModel.RequestStartDialogWithAccount += ShowStartDialogWithAccountAsync;
 
@@ -357,6 +367,25 @@ public partial class MainWindow : FluentWindow
         _trayService.HideTrayIcon();
     }
 
+    private async Task<bool> ConfirmUnnamedExitAsync(string message)
+    {
+        var warning = new AppContentDialog
+        {
+            Title = "仍有未命名实例可能计费",
+            Content = new System.Windows.Controls.TextBlock { TextWrapping = TextWrapping.Wrap, Text = message },
+            PrimaryButtonText = "打开 Colab 管理会话",
+            SecondaryButtonText = "已了解，仍退出",
+            CloseButtonText = "留在应用"
+        };
+        var choice = await _dialogService.ShowContentDialogAsync(warning, DialogHost);
+        if (choice == ContentDialogResult.Primary)
+        {
+            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://colab.research.google.com/") { UseShellExecute = true }); }
+            catch (System.ComponentModel.Win32Exception) { System.Windows.MessageBox.Show("请手动打开 https://colab.research.google.com/ → 管理会话。"); }
+        }
+        return choice == ContentDialogResult.Secondary;
+    }
+
     private async void OnWindowClosing(object? sender, CancelEventArgs e)
     {
         if (_allowDirectClose)
@@ -366,6 +395,19 @@ public partial class MainWindow : FluentWindow
 
         if (!_viewModel.HasActiveVm)
         {
+            if (_isShuttingDown) { e.Cancel = true; return; }
+            if (_viewModel.Session.UnnamedAssignmentWarning is { Length: > 0 } warning)
+            {
+                e.Cancel = true;
+                if (_closeGuardActive) return;
+                _closeGuardActive = true;
+                try
+                {
+                    if (await ConfirmUnnamedExitAsync(warning) && !_viewModel.HasActiveVm) { _allowDirectClose = true; Close(); }
+                }
+                finally { _closeGuardActive = false; }
+                return;
+            }
             // No active session: closing with pending offline tasks needs one confirmation.
             var pending = _viewModel.Queue.PendingCount;
             if (pending <= 0)
@@ -436,7 +478,7 @@ public partial class MainWindow : FluentWindow
                 Hide();
                 var trayAcct = string.IsNullOrWhiteSpace(summary.AccountName) ? string.Empty : $"[{summary.AccountName}] ";
                 _trayService.ShowTrayIcon($"漫画翻译 · {trayAcct}{summary.ElapsedText} ({summary.EstimatedCuText})");
-                _trayService.ShowBalloon("已最小化到系统托盘", $"{trayAcct}Colab L4 仍在后台运行计费，双击托盘图标可恢复窗口。");
+                _trayService.ShowBalloon("已最小化到系统托盘", $"{trayAcct}{_viewModel.Session.ActiveDetectedGpuName ?? Models.GpuTiers.GetSpec(_viewModel.Session.ActiveRequestedGpuTier).ShortName} 仍在后台运行计费，双击托盘图标可恢复窗口。");
                 break;
 
             case CloseGuardAction.StopAndExit:
@@ -446,6 +488,10 @@ public partial class MainWindow : FluentWindow
                     var res = await _viewModel.ExecuteStopAsync(isAutoStop: false);
                     if (res.VerifiedStopped)
                     {
+                        if (res.RemainingUnnamedAssignments > 0)
+                        {
+                            if (!await ConfirmUnnamedExitAsync(res.Message)) return;
+                        }
                         _allowDirectClose = true;
                         Close();
                     }

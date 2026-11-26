@@ -126,6 +126,7 @@ public sealed class SessionManagerTests : IDisposable
         var unnamedMgr = new SessionManager(unnamedCli, new VmScripts(store, _scriptsDir), store, new BillingTimer());
         var stopResult = await unnamedMgr.StopSessionAsync();
         Assert.True(stopResult.VerifiedStopped);
+        Assert.Equal(1, stopResult.RemainingUnnamedAssignments);
         Assert.Contains("未命名实例", stopResult.Message);
         Assert.Equal(SessionState.Idle, unnamedMgr.State);
         Assert.NotNull(unnamedMgr.UnnamedAssignmentWarning);

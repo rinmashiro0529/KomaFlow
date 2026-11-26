@@ -41,6 +41,8 @@ public static class GcloudAccountLoginService
                 return true;
             }
 
+            var bat = Path.Combine(dir, "gcloud.bat");
+            if (File.Exists(bat)) { resolvedPath = bat; return true; }
             var exe = Path.Combine(dir, "gcloud.exe");
             if (File.Exists(exe))
             {
@@ -83,6 +85,11 @@ public static class GcloudAccountLoginService
             return new GcloudLoginResult(false, ErrorMessage: "未找到 gcloud CLI（请确认已安装 Google Cloud SDK，或使用「导入凭据 JSON」）。");
         }
 
+        return await RunLoginProcessAsync(dataDirectory, gcloudPath, onAuthUrl, cancellationToken).ConfigureAwait(false);
+    }
+
+    public static async Task<GcloudLoginResult> RunLoginProcessAsync(string dataDirectory, string gcloudPath, Action<string>? onAuthUrl, CancellationToken cancellationToken)
+    {
         var tempDir = Path.Combine(dataDirectory, $"gcloud_login_{Guid.NewGuid():N}"[..24]);
         Directory.CreateDirectory(tempDir);
 
@@ -99,12 +106,23 @@ public static class GcloudAccountLoginService
         psi.Environment["CLOUDSDK_CONFIG"] = tempDir;
         psi.Environment["PYTHONUTF8"] = "1";
 
-        psi.ArgumentList.Add("auth");
-        psi.ArgumentList.Add("application-default");
-        psi.ArgumentList.Add("login");
-        psi.ArgumentList.Add("--disable-quota-project");
-        psi.ArgumentList.Add($"--scopes={RequiredScopes}");
-
+        if (!Path.GetExtension(gcloudPath).Equals(".exe", StringComparison.OrdinalIgnoreCase))
+        {
+            psi.FileName = Path.Combine(Environment.SystemDirectory, "cmd.exe");
+            psi.Environment["KOMAFLOW_LOGIN_SCRIPT"] = Path.GetFullPath(gcloudPath);
+            psi.Arguments = $"/d /v:off /s /c \"\"%KOMAFLOW_LOGIN_SCRIPT%\" auth application-default login --disable-quota-project --scopes={RequiredScopes}\"";
+        }
+        else
+        {
+            psi.ArgumentList.Add("auth");
+            psi.ArgumentList.Add("application-default");
+            psi.ArgumentList.Add("login");
+            psi.ArgumentList.Add("--disable-quota-project");
+            psi.ArgumentList.Add($"--scopes={RequiredScopes}");
+        }
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(TimeSpan.FromMinutes(5));
+        var token = deadline.Token;
         using var process = new Process { StartInfo = psi };
         var stderrLines = new List<string>();
         bool urlNotified = false;
@@ -136,10 +154,10 @@ public static class GcloudAccountLoginService
                 }
             }
 
-            var outTask = ReadAllLinesAsync(process.StandardOutput, l => HandleLine(l, false), cancellationToken);
-            var errTask = ReadAllLinesAsync(process.StandardError, l => HandleLine(l, true), cancellationToken);
+            var outTask = ReadAllLinesAsync(process.StandardOutput, l => HandleLine(l, false), token);
+            var errTask = ReadAllLinesAsync(process.StandardError, l => HandleLine(l, true), token);
 
-            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            await process.WaitForExitAsync(token).ConfigureAwait(false);
             await Task.WhenAll(outTask, errTask).ConfigureAwait(false);
 
             var credPath = Path.Combine(tempDir, "application_default_credentials.json");
@@ -149,14 +167,15 @@ public static class GcloudAccountLoginService
             }
 
             CleanupTempDirectory(tempDir);
-            var reason = stderrLines.LastOrDefault(l => !string.IsNullOrWhiteSpace(l)) ?? $"gcloud 退出码 {process.ExitCode}";
+            var output = string.Join(" ", stderrLines).ToLowerInvariant();
+            var reason = output.Contains("429") ? "请求限流，请稍后重试。" : output.Contains("invalid_grant") ? "凭据失效，请重新登录。" : output.Contains("403") || output.Contains("permission") ? "缺少所需权限。" : output.Contains("json") ? "凭据 JSON 格式有误。" : output.Contains("network") || output.Contains("proxy") || output.Contains("connection") ? "网络或代理不可达。" : $"gcloud 退出码 {process.ExitCode}。";
             return new GcloudLoginResult(false, ErrorMessage: $"浏览器登录未完成：{reason}");
         }
         catch (OperationCanceledException)
         {
             TryKillTree(process);
             CleanupTempDirectory(tempDir);
-            return new GcloudLoginResult(false, ErrorMessage: "已取消浏览器登录。");
+            return new GcloudLoginResult(false, ErrorMessage: cancellationToken.IsCancellationRequested ? "已取消浏览器登录。" : "浏览器登录超过 5 分钟，请检查网络或代理后重试。");
         }
         catch (Exception ex)
         {
@@ -208,6 +227,7 @@ public static class GcloudAccountLoginService
             if (!process.HasExited)
             {
                 process.Kill(entireProcessTree: true);
+                process.WaitForExit(3000);
             }
         }
         catch

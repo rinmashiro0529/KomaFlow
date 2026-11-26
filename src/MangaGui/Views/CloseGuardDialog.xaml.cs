@@ -14,7 +14,7 @@ public partial class CloseGuardDialog : AppContentDialog
         var acctPrefix = !string.IsNullOrWhiteSpace(summary.AccountName)
             ? $"账号「{summary.AccountName}」"
             : string.Empty;
-        BodyTextBlock.Text = $"{acctPrefix}已运行 {summary.ElapsedText}，{summary.EstimatedCuText}。直接关闭窗口不会释放 Colab L4 实例。";
+        BodyTextBlock.Text = $"{acctPrefix}已运行 {summary.ElapsedText}，{summary.EstimatedCuText}。直接关闭窗口不会释放 Colab 实例。";
     }
 
     protected override void OnButtonClick(ContentDialogButton button)

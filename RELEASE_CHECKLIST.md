@@ -1,4 +1,4 @@
-# MangaGui 发布前验证清单（v1.5.0）
+# MangaGui 发布前验证清单（v1.7.0）
 
 本清单用于规范每次构建与发布前的可复现门禁验证，确保零计费漏停风险、多账号严格隔离与成品完整性（对应审计项 A-15）。
 
@@ -12,7 +12,7 @@
   bash -n assets/vm_status.sh
   bash -n assets/vm_pack.sh
   ```
-- [ ] 确认未修改父目录 `Z:\控制台\colab_manga\` 中的原始脚本（`vm_setup.sh` / `run_translate.sh` / `wait_translate.sh` / `deploy.py` / `submit.py`）。
+- [ ] 确认未修改父目录 `../` 中的原始脚本（`vm_setup.sh` / `run_translate.sh` / `wait_translate.sh` / `deploy.py` / `submit.py`）。
 
 ## 2. 自动化回归测试门禁（零真实 Colab 计费）
 
@@ -58,8 +58,10 @@
    - `publish\assets\mtui_patch.py`
    - `publish\assets\mtui_config.json`
    - `publish\assets\sakura_dict.txt`
+   - `publish\assets\prompt_hq.yaml`
+   - `publish\assets\manga.example.json`
    - `publish\MangaGui.runtimeconfig.json`（随单文件发布产生；若 MangaCli 也产出对应 `.runtimeconfig.json` 一并保留）
-   - `publish\build_manifest.json`（含版本号、构建时间与各产物 SHA256；**必须同时包含 MangaGui.exe 与 MangaCli.exe**，7 项资产的哈希必须与 `gui\assets\` 完全一致）
+   - `publish\build_manifest.json`（含版本号、构建时间与各产物 SHA256；**必须同时包含 MangaGui.exe 与 MangaCli.exe**，所有内置资产的哈希必须与 `gui\assets\` 完全一致）
 4. 资产完整性：对 4 个 `.sh` 执行 `bash -n` 语法检查；`sakura_dict.txt` 必须是 0 字节空文件；
    `mtui_config.json` 必须 `cli.verbose=false`、`cli.batch_size=1`。
 

@@ -137,7 +137,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _isDragOver;
     [ObservableProperty] private bool _isPrechecking;
     [ObservableProperty] private string _precheckStatusText = string.Empty;
-    [ObservableProperty] private string _dropZonePromptText = "拖入漫画 .zip / .cbz（或文件夹）到此处，或点击选择文件（后台离线预检，不卡界面）";
+    [ObservableProperty] private string _dropZonePromptText = "拖入漫画 .zip / .cbz（文件夹仅扫描本层 ZIP/CBZ）到此处，或点击选择文件（后台离线预检，不卡界面）";
     [ObservableProperty] private string _environmentWarning = string.Empty;
     [ObservableProperty] private bool _hasEnvironmentWarning;
     [ObservableProperty] private bool _hasTasks;
@@ -410,6 +410,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    public event Func<Task>? RequestEnvironmentCheck;
+    [RelayCommand]
+    private Task OpenEnvironmentAsync() => RequestEnvironmentCheck?.Invoke() ?? Task.CompletedTask;
+
+    public EnvironmentCheckDialogViewModel CreateEnvironmentCheck() => new(_store ?? throw new InvalidOperationException("设置不可用"), _scripts, _cli, _accounts, RunEnvironmentSelfCheck);
+
     public void RunEnvironmentSelfCheck()
     {
         var issues = new List<string>();
@@ -437,10 +443,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
         else
         {
-            AppendLog(LogLevel.Info, "环境自检：未找到 colab_manga 目录（新引擎不需要；仅自定义术语表 sakura_dict.txt 需要）");
+            AppendLog(LogLevel.Info, "环境自检：mtui 不需要 manga.json；可单独选择术语表");
         }
 
         issues.AddRange(_session.GetEnvironmentIssues());
+        if (_accounts is not null && !_accounts.GetEnabledAccounts().Any(AccountManager.HasLocalCredentials)) issues.Add("尚未登录 Colab 账号或没有启用账号，请打开账号管理。");
 
         _dispatchToUi(() =>
         {
@@ -605,7 +612,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private StartSessionDialogViewModel BuildStartDialogViewModel()
     {
-        var vm = new StartSessionDialogViewModel();
+        var vm = new StartSessionDialogViewModel { MtuiEngine = _session.ConfiguredEngine == TranslationEngines.Mtui };
         if (_store is not null)
         {
             var settings = _store.LoadSettings();
@@ -629,7 +636,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             ? $"自动按最高余额轮询（当前推荐：{topAuto.Name} · {topAutoQuota!.FormatBalanceShort()}）"
             : "自动按最高余额轮询（暂无可用账号）";
 
-        options.Add(new StartAccountOption(
+        if (topAuto is not null && AccountManager.HasLocalCredentials(topAuto)) options.Add(new StartAccountOption(
             AccountSelectionModes.Auto,
             autoLabel,
             topAutoQuota?.CurrentBalanceCu,
@@ -637,7 +644,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             autoPlan.Warning));
 
         var enabledAccounts = _accounts.GetEnabledAccounts();
-        foreach (var acct in enabledAccounts)
+        foreach (var acct in enabledAccounts.Where(AccountManager.HasLocalCredentials))
         {
             var q = _accounts.GetQuota(acct.Id);
             var activeSuffix = q.ActiveAssignments is > 0 ? $" · 活跃 {q.ActiveAssignments}" : string.Empty;
@@ -1168,10 +1175,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var minCu = _accounts.MinBalanceCu;
 
         var enabled = _accounts.GetEnabledAccounts();
-        if (enabled.Count == 0)
-        {
-            enabled = _accounts.GetAccounts();
-        }
 
         AccountBadges.Clear();
         foreach (var acct in enabled)
@@ -1193,7 +1196,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         else
         {
             var target = plan.Candidates.FirstOrDefault();
-            ActiveAccountDisplay = target?.Name ?? ColabAccountContext.Default.DisplayName;
+            ActiveAccountDisplay = target is null ? "没有可用账号" : AccountManager.HasLocalCredentials(target) ? target.Name : "尚未登录 Colab 账号";
             AccountModeSummary = IsAutoAccountMode
                 ? "自动按额度"
                 : $"手动 · {ActiveAccountDisplay}";
@@ -1649,7 +1652,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
         else
         {
-            DropZonePromptText = "拖入漫画 .zip / .cbz（或文件夹）到此处，或点击选择文件（后台离线预检，不卡界面）";
+            DropZonePromptText = "拖入漫画 .zip / .cbz（文件夹仅扫描本层 ZIP/CBZ）到此处，或点击选择文件（后台离线预检，不卡界面）";
         }
     }
 

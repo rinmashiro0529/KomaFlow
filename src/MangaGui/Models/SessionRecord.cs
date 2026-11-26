@@ -133,6 +133,9 @@ public sealed class AppSettings
     [JsonPropertyName("colab_exe_path")]
     public string? ColabExePath { get; set; }
 
+    [JsonPropertyName("custom_sakura_dict_path")]
+    public string? CustomSakuraDictPath { get; set; }
+
     /// <summary>
     /// Cloud translation engine: "mtui" (default) or "mit". Missing/invalid values resolve to "mtui".
     /// </summary>

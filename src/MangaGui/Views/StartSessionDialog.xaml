@@ -43,17 +43,19 @@
                       Content="G4 均衡模式（32B Q8 + Sakura 14B 双模型热备，替代 122B 旗舰）" />
         </StackPanel>
 
-        <!-- Account picker (visible when AccountManager is active) -->
+        <!-- Account picker & warnings (keeps warning visible when 0 accounts are enabled) -->
         <StackPanel Margin="0,0,0,12"
-                    Visibility="{Binding ShowAccountPicker, Converter={StaticResource BoolToVis}}">
-            <ui:TextBlock FontTypography="BodyStrong"
-                          Text="本次计费账号"
-                          Margin="0,0,0,4" />
-            <ComboBox ItemsSource="{Binding AccountOptions}"
-                      SelectedItem="{Binding SelectedAccountOption, Mode=TwoWay}"
-                      DisplayMemberPath="DisplayText"
-                      HorizontalAlignment="Stretch"
-                      AutomationProperties.Name="选择本次计费账号" />
+                    Visibility="{Binding ShowAccountSection, Converter={StaticResource BoolToVis}}">
+            <StackPanel Visibility="{Binding ShowAccountPicker, Converter={StaticResource BoolToVis}}">
+                <ui:TextBlock FontTypography="BodyStrong"
+                              Text="本次计费账号"
+                              Margin="0,0,0,4" />
+                <ComboBox ItemsSource="{Binding AccountOptions}"
+                          SelectedItem="{Binding SelectedAccountOption, Mode=TwoWay}"
+                          DisplayMemberPath="DisplayText"
+                          HorizontalAlignment="Stretch"
+                          AutomationProperties.Name="选择本次计费账号" />
+            </StackPanel>
             <ui:InfoBar Severity="Warning"
                         Margin="0,8,0,0"
                         IsClosable="False"

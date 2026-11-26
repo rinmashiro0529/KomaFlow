@@ -1,0 +1,86 @@
+<views:AppContentDialog x:Class="MangaGui.Views.ConfirmStopDialog"
+                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                       xmlns:views="clr-namespace:MangaGui.Views"
+                       Title="停止并结束计费？"
+                       DialogMaxWidth="480"
+                       PrimaryButtonText="停止并结束计费"
+                       CloseButtonText="取消">
+    <views:AppContentDialog.Resources>
+        <Style TargetType="{x:Type views:ConfirmStopDialog}"
+               BasedOn="{StaticResource {x:Type ui:ContentDialog}}" />
+    </views:AppContentDialog.Resources>
+
+    <StackPanel>
+        <TextBlock TextWrapping="Wrap"
+                   Margin="0,0,0,12"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                   Text="将执行 colab stop -s manga 并复查活动会话，确认释放 GPU 后结束计费。" />
+
+        <Grid Margin="0,0,0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="110" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <ui:TextBlock x:Name="AccountLabelBlock" Grid.Row="0" Grid.Column="0" FontTypography="Caption"
+                          Margin="0,0,0,4"
+                          Visibility="Collapsed"
+                          Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                          Text="计费账号" />
+            <TextBlock x:Name="AccountTextBlock" Grid.Row="0" Grid.Column="1"
+                       Margin="0,0,0,4"
+                       Visibility="Collapsed"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+
+            <ui:TextBlock Grid.Row="1" Grid.Column="0" FontTypography="Caption"
+                          Margin="0,0,0,4"
+                          Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                          Text="已运行时长" />
+            <TextBlock x:Name="ElapsedTextBlock" Grid.Row="1" Grid.Column="1"
+                       Margin="0,0,0,4"
+                       FontFamily="Cascadia Mono, Consolas"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+
+            <ui:TextBlock Grid.Row="2" Grid.Column="0" FontTypography="Caption"
+                          Margin="0,0,0,4"
+                          Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                          Text="估算计费" />
+            <TextBlock x:Name="CuTextBlock" Grid.Row="2" Grid.Column="1"
+                       Margin="0,0,0,4"
+                       FontFamily="Cascadia Mono, Consolas"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+
+            <ui:TextBlock Grid.Row="3" Grid.Column="0" FontTypography="Caption"
+                          Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                          Text="队列未完成任务" />
+            <TextBlock x:Name="PendingTextBlock" Grid.Row="3" Grid.Column="1"
+                       FontFamily="Cascadia Mono, Consolas"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+        </Grid>
+
+        <ui:TextBlock x:Name="PendingWarningText"
+                      FontTypography="Caption"
+                      Margin="0,8,0,0"
+                      TextWrapping="Wrap"
+                      Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                      Text="未完成的任务会被取消" />
+        <ui:TextBlock x:Name="DeployingWarningText"
+                      FontTypography="Caption"
+                      Margin="0,4,0,0"
+                      TextWrapping="Wrap"
+                      Foreground="{DynamicResource SystemFillColorCautionBrush}"
+                      Text="部署尚未完成，停止后需要重新部署" />
+    </StackPanel>
+</views:AppContentDialog>

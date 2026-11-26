@@ -1,0 +1,35 @@
+<views:AppContentDialog x:Class="MangaGui.Views.OrphanSessionDialog"
+                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                       xmlns:views="clr-namespace:MangaGui.Views"
+                       Title="检测到云端已有运行中的 manga 会话"
+                       DialogMaxWidth="560"
+                       PrimaryButtonText="接管并设置运行时长"
+                       SecondaryButtonText="立即停止计费"
+                       CloseButtonText="暂不处理">
+    <views:AppContentDialog.Resources>
+        <Style TargetType="{x:Type views:OrphanSessionDialog}"
+               BasedOn="{StaticResource {x:Type ui:ContentDialog}}" />
+    </views:AppContentDialog.Resources>
+
+    <!-- MinWidth keeps the footer wide enough for the three buttons' labels. DialogMaxWidth is
+         raised to 560 because the content's natural width (~552) exceeds the shared 480 cap:
+         hitting the cap makes WPF-UI's ResizeWidth rewrite DialogHeight from the margin-inclusive
+         DesiredSize and leaves ~70px of bottom whitespace. -->
+    <StackPanel MinWidth="440">
+        <Border Padding="0"
+                Margin="0,0,0,8"
+                HorizontalAlignment="Left"
+                Background="{DynamicResource SystemFillColorCautionBackgroundBrush}">
+            <ui:TextBlock FontTypography="Caption"
+                          FontWeight="SemiBold"
+                          Foreground="{DynamicResource SystemFillColorCautionBrush}"
+                          Text="孤儿计费会话警示" />
+        </Border>
+        <TextBlock x:Name="BodyTextBlock"
+                   TextWrapping="Wrap"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                   Text="本地未找到 session.json（可能是之前通过命令行启动或异常退出遗留），该会话当前正在持续计费，已运行时长未知。" />
+    </StackPanel>
+</views:AppContentDialog>

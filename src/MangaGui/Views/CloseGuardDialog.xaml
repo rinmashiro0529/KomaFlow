@@ -1,0 +1,30 @@
+<views:AppContentDialog x:Class="MangaGui.Views.CloseGuardDialog"
+                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                       xmlns:views="clr-namespace:MangaGui.Views"
+                       Title="运行环境仍在计费"
+                       DialogMaxWidth="480"
+                       PrimaryButtonText="停止计费并退出"
+                       SecondaryButtonText="最小化到托盘"
+                       CloseButtonText="取消">
+    <views:AppContentDialog.Resources>
+        <Style TargetType="{x:Type views:CloseGuardDialog}"
+               BasedOn="{StaticResource {x:Type ui:ContentDialog}}" />
+    </views:AppContentDialog.Resources>
+
+    <StackPanel>
+        <Border Padding="0"
+                Margin="0,0,0,8"
+                HorizontalAlignment="Left"
+                Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}">
+            <ui:TextBlock FontTypography="Caption"
+                          FontWeight="SemiBold"
+                          Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                          Text="防忘关计费保护" />
+        </Border>
+        <TextBlock x:Name="BodyTextBlock"
+                   TextWrapping="Wrap"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+    </StackPanel>
+</views:AppContentDialog>

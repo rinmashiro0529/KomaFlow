@@ -1,0 +1,9 @@
+* text=auto
+
+# Keep Linux VM shell scripts and Python/YAML assets strictly LF
+assets/*.sh text eol=lf
+assets/*.py text eol=lf
+assets/*.yaml text eol=lf
+assets/*.json text eol=lf
+tests/scripts/*.sh text eol=lf
+tests/scripts/*.py text eol=lf

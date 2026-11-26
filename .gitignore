@@ -1,0 +1,28 @@
+# .NET build & publish outputs
+bin/
+obj/
+publish/
+publish_*/
+TestResults/
+*.user
+*.suo
+*.cache
+*.pdb
+*.log
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# OS & temporary files
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.tmp
+*.part

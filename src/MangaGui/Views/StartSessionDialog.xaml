@@ -1,0 +1,106 @@
+<views:AppContentDialog x:Class="MangaGui.Views.StartSessionDialog"
+                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                       xmlns:views="clr-namespace:MangaGui.Views"
+                       Title="启动 Colab GPU 运行环境"
+                       DialogMaxWidth="500"
+                       PrimaryButtonText="启动并开始计费"
+                       CloseButtonText="取消"
+                       IsPrimaryButtonEnabled="{Binding CanConfirm}">
+    <views:AppContentDialog.Resources>
+        <Style TargetType="{x:Type views:StartSessionDialog}"
+               BasedOn="{StaticResource {x:Type ui:ContentDialog}}" />
+    </views:AppContentDialog.Resources>
+
+    <StackPanel>
+        <TextBlock TextWrapping="Wrap"
+                   Margin="0,0,0,12"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                   Text="{Binding BillingHintText}" />
+
+        <!-- GPU tier & adaptive workflow selector -->
+        <StackPanel Margin="0,0,0,12">
+            <ui:TextBlock FontTypography="BodyStrong"
+                          Text="GPU 档位与画质方案"
+                          Margin="0,0,0,4" />
+            <ComboBox ItemsSource="{Binding GpuOptions}"
+                      SelectedItem="{Binding SelectedGpuTier, Mode=TwoWay}"
+                      DisplayMemberPath="DisplayName"
+                      HorizontalAlignment="Stretch"
+                      AutomationProperties.Name="选择 GPU 档位" />
+            <TextBlock TextWrapping="Wrap"
+                       Margin="0,4,0,0"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       Text="{Binding SelectedGpuTier.WorkflowSummary}" />
+            <CheckBox Margin="0,8,0,0"
+                      IsChecked="{Binding UseFlux2Inpaint, Mode=TwoWay}"
+                      Visibility="{Binding ShowFlux2Option, Converter={StaticResource BoolToVis}}"
+                      Content="启用 Flux2-Klein 4B 高精重绘（彩色/复杂背景更干净，约 +25s/页）" />
+            <CheckBox Margin="0,4,0,0"
+                      IsChecked="{Binding UseG4BalancedMode, Mode=TwoWay}"
+                      Visibility="{Binding ShowG4SubModeOption, Converter={StaticResource BoolToVis}}"
+                      Content="G4 均衡模式（32B Q8 + Sakura 14B 双模型热备，替代 122B 旗舰）" />
+        </StackPanel>
+
+        <!-- Account picker (visible when AccountManager is active) -->
+        <StackPanel Margin="0,0,0,12"
+                    Visibility="{Binding ShowAccountPicker, Converter={StaticResource BoolToVis}}">
+            <ui:TextBlock FontTypography="BodyStrong"
+                          Text="本次计费账号"
+                          Margin="0,0,0,4" />
+            <ComboBox ItemsSource="{Binding AccountOptions}"
+                      SelectedItem="{Binding SelectedAccountOption, Mode=TwoWay}"
+                      DisplayMemberPath="DisplayText"
+                      HorizontalAlignment="Stretch"
+                      AutomationProperties.Name="选择本次计费账号" />
+            <ui:InfoBar Severity="Warning"
+                        Margin="0,8,0,0"
+                        IsClosable="False"
+                        Title="账号额度提示"
+                        Message="{Binding AccountBalanceWarningMessage}"
+                        IsOpen="{Binding HasAccountBalanceWarning}" />
+        </StackPanel>
+
+        <RadioButton x:Name="Radio30"
+                     GroupName="Duration"
+                     Margin="0,0,0,8"
+                     Checked="OnDurationChecked"
+                     Tag="30"
+                     Content="{Binding Duration30Label}" />
+        <RadioButton x:Name="Radio60"
+                     GroupName="Duration"
+                     IsChecked="True"
+                     Margin="0,0,0,8"
+                     Checked="OnDurationChecked"
+                     Tag="60"
+                     Content="{Binding Duration60Label}" />
+        <RadioButton x:Name="Radio120"
+                     GroupName="Duration"
+                     Margin="0,0,0,8"
+                     Checked="OnDurationChecked"
+                     Tag="120"
+                     Content="{Binding Duration120Label}" />
+        <RadioButton x:Name="RadioUnlimited"
+                     GroupName="Duration"
+                     Checked="OnDurationChecked"
+                     Tag="0"
+                     Content="不限时长（需手动停止）" />
+
+        <ui:InfoBar Severity="Warning"
+                    Margin="0,8,0,0"
+                    IsClosable="False"
+                    Title="不限时长将持续计费"
+                    Message="选择不限时长后，需要您手动停止服务以结束计费。"
+                    IsOpen="{Binding IsUnlimited}" />
+        <CheckBox Margin="0,8,0,0"
+                  IsChecked="{Binding AcknowledgeUnlimitedBilling, Mode=TwoWay}"
+                  Visibility="{Binding IsUnlimited, Converter={StaticResource BoolToVis}}"
+                  Content="我已了解需要手动停止计费" />
+
+        <CheckBox Margin="0,8,0,0"
+                  IsChecked="{Binding AutoStopOnExpiry, Mode=TwoWay}"
+                  IsEnabled="{Binding IsAutoStopEnabled}"
+                  Content="到时且队列空闲时自动停止计费" />
+    </StackPanel>
+</views:AppContentDialog>

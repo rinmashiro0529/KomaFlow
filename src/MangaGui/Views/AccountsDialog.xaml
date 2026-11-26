@@ -1,0 +1,260 @@
+<views:AppContentDialog x:Class="MangaGui.Views.AccountsDialog"
+                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                       xmlns:views="clr-namespace:MangaGui.Views"
+                       Title="Colab 账号与额度管理"
+                       DialogMaxWidth="680"
+                       CloseButtonText="关闭">
+    <views:AppContentDialog.Resources>
+        <Style TargetType="{x:Type views:AccountsDialog}"
+               BasedOn="{StaticResource {x:Type ui:ContentDialog}}" />
+    </views:AppContentDialog.Resources>
+
+    <StackPanel MinWidth="560">
+        <ui:TextBlock FontTypography="Caption"
+                      Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                      TextWrapping="Wrap"
+                      Margin="0,0,0,12"
+                      Text="各账号使用独立的 ADC 凭据与会话状态文件，互不干扰。自动轮询模式会在启动服务时优先选择空闲且剩余 CU 最高的账号。" />
+
+        <!-- Selection mode + primary actions -->
+        <Grid Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <ui:Button Content="自动按剩余额度轮询"
+                           Command="{Binding SwitchToAutoModeCommand}"
+                           IsEnabled="{Binding CanModifyActiveSelection}"
+                           Margin="0,0,8,0">
+                    <ui:Button.Style>
+                        <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsAutoMode}" Value="True">
+                                    <Setter Property="Appearance" Value="Primary" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ui:Button.Style>
+                </ui:Button>
+                <ui:Button Content="刷新全部额度"
+                           Command="{Binding RefreshAllCommand}"
+                           IsEnabled="{Binding CanRefreshAll}"
+                           Margin="0,0,8,0">
+                    <ui:Button.Icon>
+                        <ui:SymbolIcon Symbol="ArrowSync24" />
+                    </ui:Button.Icon>
+                </ui:Button>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <ui:Button Content="浏览器登录添加"
+                           Command="{Binding AddByBrowserLoginCommand}"
+                           IsEnabled="{Binding CanAddAccount}"
+                           Margin="0,0,8,0">
+                    <ui:Button.Icon>
+                        <ui:SymbolIcon Symbol="Add24" />
+                    </ui:Button.Icon>
+                </ui:Button>
+                <ui:Button Content="导入 JSON…"
+                           Command="{Binding ImportJsonCommand}"
+                           IsEnabled="{Binding CanAddAccount}">
+                    <ui:Button.Icon>
+                        <ui:SymbolIcon Symbol="FolderOpen24" />
+                    </ui:Button.Icon>
+                </ui:Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Browser login progress banner -->
+        <ui:Card Margin="0,0,0,12"
+                 Padding="12"
+                 Visibility="{Binding IsLoggingIn, Converter={StaticResource BoolToVis}}">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <ui:ProgressRing Width="16" Height="16" IsIndeterminate="True" Margin="0,0,8,0" />
+                    <ui:TextBlock FontTypography="Body"
+                                  Text="{Binding LoginStatusText}"
+                                  TextWrapping="Wrap"
+                                  VerticalAlignment="Center" />
+                </StackPanel>
+                <Grid Visibility="{Binding HasLoginAuthUrl, Converter={StaticResource BoolToVis}}" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Text="{Binding LoginAuthUrl, Mode=OneWay}"
+                             IsReadOnly="True"
+                             FontFamily="Cascadia Mono, Consolas"
+                             FontSize="12"
+                             VerticalAlignment="Center" />
+                    <ui:Button Grid.Column="1"
+                               Content="复制链接"
+                               Command="{Binding CopyLoginUrlCommand}"
+                               Margin="8,0,0,0">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="Copy24" />
+                        </ui:Button.Icon>
+                    </ui:Button>
+                </Grid>
+                <ui:Button Content="取消登录"
+                           Command="{Binding CancelBrowserLoginCommand}"
+                           HorizontalAlignment="Left" />
+            </StackPanel>
+        </ui:Card>
+
+        <!-- Feedback banner -->
+        <ui:InfoBar Margin="0,0,0,12"
+                    IsClosable="True"
+                    IsOpen="{Binding HasFeedback, Mode=TwoWay}"
+                    Message="{Binding FeedbackMessage}">
+            <ui:InfoBar.Style>
+                <Style TargetType="ui:InfoBar" BasedOn="{StaticResource {x:Type ui:InfoBar}}">
+                    <Setter Property="Severity" Value="Success" />
+                    <Setter Property="Title" Value="账号状态" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsFeedbackError}" Value="True">
+                            <Setter Property="Severity" Value="Warning" />
+                            <Setter Property="Title" Value="提示" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ui:InfoBar.Style>
+        </ui:InfoBar>
+
+        <!-- Accounts list -->
+        <ScrollViewer MaxHeight="260" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12">
+            <ItemsControl ItemsSource="{Binding Accounts}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <ui:Card Margin="0,0,0,8" Padding="12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <CheckBox Grid.Column="0"
+                                          IsChecked="{Binding Enabled, Mode=OneWay}"
+                                          Command="{Binding DataContext.ToggleEnabledCommand, RelativeSource={RelativeSource AncestorType={x:Type views:AccountsDialog}}}"
+                                          CommandParameter="{Binding}"
+                                          ToolTip="启用或停用该账号参与自动轮询"
+                                          VerticalAlignment="Center"
+                                          Margin="0,0,8,0" />
+
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBox Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 MinWidth="100"
+                                                 MaxWidth="180"
+                                                 FontWeight="SemiBold"
+                                                 LostFocus="OnAccountNameLostFocus"
+                                                 KeyDown="OnAccountNameKeyDown"
+                                                 ToolTip="编辑账号别名，回车或失焦自动保存" />
+                                        <ui:TextBlock FontTypography="BodyStrong"
+                                                      Text="{Binding BalanceShortText}"
+                                                      Margin="12,0,0,0"
+                                                      VerticalAlignment="Center">
+                                            <ui:TextBlock.Style>
+                                                <Style TargetType="ui:TextBlock">
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsLowBalance}" Value="True">
+                                                            <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsErrorOrExpired}" Value="True">
+                                                            <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </ui:TextBlock.Style>
+                                        </ui:TextBlock>
+                                        <ui:TextBlock FontTypography="Caption"
+                                                      Text="运行中"
+                                                      Margin="8,0,0,0"
+                                                      VerticalAlignment="Center"
+                                                      Foreground="{DynamicResource SystemFillColorSuccessBrush}"
+                                                      Visibility="{Binding IsActiveOwner, Converter={StaticResource BoolToVis}}" />
+                                        <ui:TextBlock FontTypography="Caption"
+                                                      Text="当前选用"
+                                                      Margin="8,0,0,0"
+                                                      VerticalAlignment="Center"
+                                                      Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"
+                                                      Visibility="{Binding IsRecommendedOrSelected, Converter={StaticResource BoolToVis}}" />
+                                    </StackPanel>
+                                    <ui:TextBlock FontTypography="Caption"
+                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                  Text="{Binding DetailSubtitle}"
+                                                  TextWrapping="Wrap"
+                                                  Margin="0,4,0,0" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ui:Button Content="选用"
+                                               Command="{Binding DataContext.SelectManualCommand, RelativeSource={RelativeSource AncestorType={x:Type views:AccountsDialog}}}"
+                                               CommandParameter="{Binding}"
+                                               IsEnabled="{Binding DataContext.CanModifyActiveSelection, RelativeSource={RelativeSource AncestorType={x:Type views:AccountsDialog}}}"
+                                               ToolTip="切换为手动模式并固定使用此账号"
+                                               Margin="0,0,4,0" />
+                                    <ui:Button Appearance="Transparent"
+                                               Command="{Binding DataContext.RefreshSingleCommand, RelativeSource={RelativeSource AncestorType={x:Type views:AccountsDialog}}}"
+                                               CommandParameter="{Binding}"
+                                               ToolTip="刷新此账号额度"
+                                               AutomationProperties.Name="刷新此账号额度"
+                                               Margin="0,0,4,0">
+                                        <ui:Button.Icon>
+                                            <ui:SymbolIcon Symbol="ArrowSync24" />
+                                        </ui:Button.Icon>
+                                    </ui:Button>
+                                    <ui:Button Appearance="Transparent"
+                                               Command="{Binding DataContext.RemoveAccountCommand, RelativeSource={RelativeSource AncestorType={x:Type views:AccountsDialog}}}"
+                                               CommandParameter="{Binding}"
+                                               ToolTip="从列表移除此账号（保留磁盘凭据文件）"
+                                               AutomationProperties.Name="移除账号">
+                                        <ui:Button.Icon>
+                                            <ui:SymbolIcon Symbol="Delete24" />
+                                        </ui:Button.Icon>
+                                    </ui:Button>
+                                </StackPanel>
+                            </Grid>
+                        </ui:Card>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Polling & threshold preferences -->
+        <ui:Card Padding="12">
+            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <CheckBox IsChecked="{Binding AutoPollEnabled, Mode=TwoWay}"
+                          Content="定时低频刷新额度"
+                          Click="OnPollingOptionChanged"
+                          VerticalAlignment="Center"
+                          Margin="0,0,12,0" />
+                <ui:TextBlock FontTypography="Caption"
+                              Text="间隔（分钟）："
+                              Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                              VerticalAlignment="Center" />
+                <ComboBox ItemsSource="{Binding PollIntervalChoices}"
+                          SelectedItem="{Binding PollIntervalMinutes, Mode=TwoWay}"
+                          IsEnabled="{Binding AutoPollEnabled}"
+                          SelectionChanged="OnPollingSelectionChanged"
+                          Width="72"
+                          Margin="4,0,16,0" />
+                <ui:TextBlock FontTypography="Caption"
+                              Text="低余额门槛（CU）："
+                              Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                              VerticalAlignment="Center" />
+                <TextBox x:Name="MinBalanceBox"
+                         Text="{Binding MinBalanceCu, Mode=TwoWay, StringFormat=F1}"
+                         Width="64"
+                         Margin="4,0,0,0"
+                         LostFocus="OnMinBalanceLostFocus"
+                         ToolTip="低于此余额时自动轮询降级优先度，并在运行中弹出提醒" />
+            </WrapPanel>
+        </ui:Card>
+    </StackPanel>
+</views:AppContentDialog>

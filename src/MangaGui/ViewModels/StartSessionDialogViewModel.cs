@@ -102,6 +102,8 @@ public partial class StartSessionDialogViewModel : ObservableObject
 
     public bool ShowAccountPicker => AccountOptions.Count > 0;
 
+    public bool ShowAccountSection => ShowAccountPicker || _noAccounts;
+
     public bool IsUnlimited => SelectedChoice == DurationChoice.Unlimited;
 
     public bool IsAutoStopEnabled => !IsUnlimited;
@@ -182,6 +184,7 @@ public partial class StartSessionDialogViewModel : ObservableObject
 
         OnPropertyChanged(nameof(CanConfirm));
         OnPropertyChanged(nameof(ShowAccountPicker));
+        OnPropertyChanged(nameof(ShowAccountSection));
         OnPropertyChanged(nameof(HasAccountBalanceWarning));
         OnPropertyChanged(nameof(AccountBalanceWarningMessage));
     }

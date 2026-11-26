@@ -32,7 +32,7 @@ public sealed class OnboardingTests : IDisposable
         var vm = new StartSessionDialogViewModel { MtuiEngine = false };
         vm.LoadGpuSettings(GpuTiers.G4, InpaintModes.Flux2Klein, G4SubModes.Balanced);
         Assert.False(vm.ShowFlux2Option); Assert.False(vm.ShowG4SubModeOption);
-        vm.LoadAccountOptions([], null); Assert.False(vm.CanConfirm);
+        vm.LoadAccountOptions([], null); Assert.False(vm.CanConfirm); Assert.True(vm.ShowAccountSection); Assert.True(vm.HasAccountBalanceWarning);
         foreach (var status in new[] { AccountQuotaStatus.AuthExpired, AccountQuotaStatus.Unknown, AccountQuotaStatus.Error })
         {
             vm.LoadAccountOptions([new("id", "测试", null, status, null)], "id");

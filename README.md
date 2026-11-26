@@ -1,4 +1,4 @@
-# KomaFlow 漫画翻译工作台 · v1.7.0
+# <img src="src/MangaGui/Assets/komaflow.svg" width="36" height="36" align="absmiddle" alt="KomaFlow" /> KomaFlow 漫画翻译工作台 · v1.7.0
 
 **Windows x64：先安装 .NET 8 Desktop Runtime，再完整解压发行包。** 保持 `MangaGui.exe`、`MangaCli.exe` 和 `assets/` 同级，不要只复制 exe。
 

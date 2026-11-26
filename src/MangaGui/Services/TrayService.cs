@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using WinForms = System.Windows.Forms;
 
@@ -7,8 +8,8 @@ namespace MangaGui.Services;
 
 /// <summary>
 /// Manages the Windows system tray icon for minimize-to-tray continuity and billing notifications.
-/// Uses an in-memory vector icon styled in the Anthropic warm clay palette, properly releases native
-/// GDI HICON handles, and auto-hides transient balloon icons when the main window is visible.
+/// Loads the embedded multi-resolution KomaFlow app icon (falling back to an in-memory vector icon),
+/// properly releases native icon handles, and auto-hides transient balloon icons when the main window is visible.
 /// </summary>
 public sealed class TrayService : IDisposable
 {
@@ -16,7 +17,7 @@ public sealed class TrayService : IDisposable
     private static extern bool DestroyIcon(IntPtr hIcon);
 
     private readonly WinForms.NotifyIcon _notifyIcon;
-    private readonly Icon _clayIcon;
+    private readonly Icon _trayIcon;
     private readonly System.Threading.Timer _transientHideTimer;
     private bool _explicitlyShown;
     private bool _disposed;
@@ -27,7 +28,7 @@ public sealed class TrayService : IDisposable
 
     public TrayService()
     {
-        _clayIcon = CreateWarmClayIcon();
+        _trayIcon = LoadAppIcon();
 
         var menu = new WinForms.ContextMenuStrip();
         menu.Items.Add("显示主窗口", null, (_, _) => RestoreRequested?.Invoke());
@@ -37,7 +38,7 @@ public sealed class TrayService : IDisposable
 
         _notifyIcon = new WinForms.NotifyIcon
         {
-            Icon = _clayIcon,
+            Icon = _trayIcon,
             Text = "漫画翻译 · Colab",
             Visible = false,
             ContextMenuStrip = menu
@@ -124,11 +125,29 @@ public sealed class TrayService : IDisposable
         _transientHideTimer.Dispose();
         _notifyIcon.Visible = false;
         _notifyIcon.Dispose();
-        _clayIcon.Dispose();
+        _trayIcon.Dispose();
     }
 
     private static string TruncateTooltip(string text)
         => text.Length <= 63 ? text : text[..60] + "...";
+
+    private static Icon LoadAppIcon()
+    {
+        try
+        {
+            using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("MangaGui.Assets.app.ico");
+            if (stream is not null)
+            {
+                return new Icon(stream, new Size(32, 32));
+            }
+        }
+        catch
+        {
+            // Fall back to synthesized vector icon if embedded resource cannot be decoded.
+        }
+
+        return CreateWarmClayIcon();
+    }
 
     private static Icon CreateWarmClayIcon()
     {

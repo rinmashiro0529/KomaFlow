@@ -1,0 +1,69 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="kf-paper" x1="16" y1="12" x2="240" y2="244" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FDFBF6"/>
+      <stop offset="55%" stop-color="#F6EFE2"/>
+      <stop offset="100%" stop-color="#ECE2CF"/>
+    </linearGradient>
+    <linearGradient id="kf-ink" x1="42" y1="70" x2="142" y2="188" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2A2724"/>
+      <stop offset="100%" stop-color="#171513"/>
+    </linearGradient>
+    <linearGradient id="kf-colab" x1="112" y1="68" x2="214" y2="188" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F9AB00"/>
+      <stop offset="55%" stop-color="#F57C00"/>
+      <stop offset="100%" stop-color="#D84315"/>
+    </linearGradient>
+    <linearGradient id="kf-seal" x1="142" y1="106" x2="184" y2="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F57C00"/>
+      <stop offset="100%" stop-color="#D84315"/>
+    </linearGradient>
+    <clipPath id="kf-clip">
+      <rect x="12" y="12" width="232" height="232" rx="54"/>
+    </clipPath>
+    <!-- Clips the upper crossing halo strictly to the overlap zone so the black ring stays 100% seamless -->
+    <clipPath id="kf-top-weave">
+      <rect x="116" y="72" width="44" height="58"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#kf-clip)">
+    <!-- Washi paper card base -->
+    <rect x="12" y="12" width="232" height="232" rx="54" fill="url(#kf-paper)"/>
+    <rect x="14" y="14" width="228" height="228" rx="52" stroke="#D7C9B2" stroke-width="4"/>
+
+    <!-- Subtle manga page frame & halftone screen-tone accents -->
+    <rect x="34" y="34" width="188" height="188" rx="22" stroke="#1E1C1A" stroke-width="5.5" opacity="0.14"/>
+    <g fill="#1E1C1A" opacity="0.15">
+      <circle cx="52" cy="194" r="3.6"/><circle cx="66" cy="194" r="3.6"/><circle cx="80" cy="194" r="3.6"/>
+      <circle cx="52" cy="206" r="3.6"/><circle cx="66" cy="206" r="3.6"/>
+      <circle cx="190" cy="50" r="3.2"/><circle cx="204" cy="50" r="3.2"/>
+      <circle cx="204" cy="62" r="3.2"/>
+    </g>
+
+    <!-- Interlocking Colab twin-C geometry: left center (96,128), right center (160,128), r=44 -->
+    <!-- Layer 1: Left Sumi-Ink Manga Speech Bubble C-ring (bottom tip tucks cleanly behind right ring) -->
+    <path d="M135 108 A44 44 0 1 0 124 162" stroke="url(#kf-ink)" stroke-width="23" stroke-linecap="round"/>
+    <path d="M59 152 L42 186 L81 169 Z" fill="url(#kf-ink)"/>
+    <!-- Vertical Japanese manga dialogue strokes inside ink bubble -->
+    <path d="M88 111 L88 145" stroke="#1F1D1A" stroke-width="7.8" stroke-linecap="round" opacity="0.80"/>
+    <path d="M103 117 L103 139" stroke="#1F1D1A" stroke-width="6.5" stroke-linecap="round" opacity="0.46"/>
+
+    <!-- Layer 2: Right Google Colab Amber-Orange C-ring (top tip tucks cleanly behind left ring; bottom arm weaves OVER left ring) -->
+    <path d="M121 148 A44 44 0 0 0 144 170" stroke="#F5EFE2" stroke-width="31" stroke-linecap="round"/>
+    <path d="M121 148 A44 44 0 1 0 132 94" stroke="url(#kf-colab)" stroke-width="23" stroke-linecap="round"/>
+
+    <!-- Layer 3: Upper crossing ONLY — Left Sumi-Ink arm weaves cleanly OVER right Colab ring with zero seam -->
+    <g clip-path="url(#kf-top-weave)">
+      <path d="M106 85 A44 44 0 0 1 135 108" stroke="#F5EFE2" stroke-width="31" stroke-linecap="round"/>
+    </g>
+    <path d="M96 84 A44 44 0 0 1 135 108" stroke="url(#kf-ink)" stroke-width="23" stroke-linecap="round"/>
+
+    <!-- Right inner Vermilion-Amber Hanko Seal with minimalist geometric "文" -->
+    <circle cx="162" cy="128" r="24.5" fill="url(#kf-seal)"/>
+    <path d="M162 113.5 L162 119.5" stroke="#FDFBF6" stroke-width="4.8" stroke-linecap="round"/>
+    <path d="M149.5 120.5 L174.5 120.5" stroke="#FDFBF6" stroke-width="4.8" stroke-linecap="round"/>
+    <path d="M169 120.5 C166.8 131 160 137.8 150.5 141.5" stroke="#FDFBF6" stroke-width="4.8" stroke-linecap="round"/>
+    <path d="M155 123.8 C158.2 131.2 164 137.8 173.5 141.5" stroke="#FDFBF6" stroke-width="4.8" stroke-linecap="round"/>
+  </g>
+</svg>

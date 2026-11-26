@@ -10,6 +10,7 @@
     <AssemblyName>MangaGui</AssemblyName>
     <RootNamespace>MangaGui</RootNamespace>
     <Version>1.7.0</Version>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <!-- 始终 framework-dependent 发布；也让引用本项目的 MangaCli 能按相同参数 publish（NETSDK1151）。 -->
@@ -19,6 +20,11 @@
   <ItemGroup>
     <Using Remove="System.Windows.Forms" />
     <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\app.ico" />
+    <EmbeddedResource Include="Assets\app.ico" LogicalName="MangaGui.Assets.app.ico" />
   </ItemGroup>
 
   <ItemGroup>

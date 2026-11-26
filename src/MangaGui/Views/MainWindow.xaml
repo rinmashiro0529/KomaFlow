@@ -4,6 +4,7 @@
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  xmlns:models="clr-namespace:MangaGui.Models"
                  Title="漫画翻译 · Colab"
+                 Icon="pack://application:,,,/MangaGui;component/Assets/app.ico"
                  Width="900"
                  Height="680"
                  MinWidth="640"
@@ -26,6 +27,9 @@
 
         <!-- ① Title bar with the "more" menu -->
         <ui:TitleBar Grid.Row="0" Title="漫画翻译 · Colab">
+            <ui:TitleBar.Icon>
+                <ui:ImageIcon Source="pack://application:,,,/MangaGui;component/Assets/app.ico" Width="18" Height="18" />
+            </ui:TitleBar.Icon>
             <ui:TitleBar.Header>
                 <ui:DropDownButton x:Name="MoreButton"
                                    HorizontalAlignment="Right"
